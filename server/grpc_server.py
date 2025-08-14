@@ -47,7 +47,7 @@ class FileService(file_service_pb2_grpc.FileServiceServicer):
             context.set_details(f"File {request.filename} not found")
             return
         
-        chunk_size = 64 * 1024  # 64KB chunks
+        chunk_size = 4 * 1024 * 1024  # 4MB chunks
         bytes_sent = 0
         with open(filepath, 'rb') as f:
             while True:
