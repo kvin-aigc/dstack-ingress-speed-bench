@@ -60,7 +60,7 @@ func createTestFile(sizeMB int) string {
 	return filename
 }
 
-func testHTTP(baseURL, testFile string) map[string]TestResult {
+func testHTTP(baseURL, testFile string, fileSizeMB int) map[string]TestResult {
 	results := make(map[string]TestResult)
 
 	// HTTP Upload Test
@@ -77,7 +77,8 @@ func testHTTP(baseURL, testFile string) map[string]TestResult {
 
 	// HTTP Download Test
 	fmt.Println("\n=== HTTP Download Test ===")
-	duration, speed, err = downloadHTTP(baseURL, "random-200mb.bin", "downloaded-http.bin")
+	downloadFileName := fmt.Sprintf("random-%dmb.bin", fileSizeMB)
+	duration, speed, err = downloadHTTP(baseURL, downloadFileName, "downloaded-http.bin")
 	results["download"] = TestResult{
 		SpeedMBps: speed,
 		Duration:  duration,
@@ -90,7 +91,7 @@ func testHTTP(baseURL, testFile string) map[string]TestResult {
 	return results
 }
 
-func testGRPC(host, testFile string) map[string]TestResult {
+func testGRPC(host, testFile string, fileSizeMB int) map[string]TestResult {
 	results := make(map[string]TestResult)
 
 	// Create gRPC connection
@@ -130,7 +131,8 @@ func testGRPC(host, testFile string) map[string]TestResult {
 
 	// gRPC Download Test
 	fmt.Println("\n=== gRPC Download Test ===")
-	duration, speed, err = downloadFile(client, "random-200mb.bin", "downloaded-grpc.bin")
+	downloadFileName := fmt.Sprintf("random-%dmb.bin", fileSizeMB)
+	duration, speed, err = downloadFile(client, downloadFileName, "downloaded-grpc.bin")
 	results["download"] = TestResult{
 		SpeedMBps: speed,
 		Duration:  duration,
@@ -277,7 +279,7 @@ func main() {
 	// Run HTTP tests
 	if !*skipHTTP {
 		fmt.Printf("\nTesting HTTPS at %s\n", httpURL)
-		httpResults = testHTTP(httpURL, testFile)
+		httpResults = testHTTP(httpURL, testFile, *size)
 	} else {
 		httpResults = make(map[string]TestResult)
 	}
@@ -285,7 +287,7 @@ func main() {
 	// Run gRPC tests
 	if !*skipGRPC {
 		fmt.Printf("\nTesting gRPC at %s\n", grpcHost)
-		grpcResults = testGRPC(grpcHost, testFile)
+		grpcResults = testGRPC(grpcHost, testFile, *size)
 	} else {
 		grpcResults = make(map[string]TestResult)
 	}

@@ -1,14 +1,19 @@
 #!/bin/bash
 
 # Network Speed Test Benchmark Runner
-# Usage: ./run-bench.sh <ssh-server-name> <reverse-baseurl>
-# Example: ./run-bench.sh dev1 https://6fd2b3f13a7deedb10480c914496e6daddefe1a6-8090.app.kvin.wang:12004/
+# Usage: ./run-bench.sh <ssh-server-name> <reverse-baseurl> [file-size-mb]
+# Example: ./run-bench.sh dev1 https://6fd2b3f13a7deedb10480c914496e6daddefe1a6-8090.app.kvin.wang:12004/ 100
 
 set -e
 
-if [ $# -ne 2 ]; then
-    echo "Usage: $0 <ssh-server-name> <reverse-baseurl>"
-    echo "Example: $0 dev1 https://6fd2b3f13a7deedb10480c914496e6daddefe1a6-8090.app.kvin.wang:12004/"
+if [ $# -lt 2 ] || [ $# -gt 3 ]; then
+    echo "Usage: $0 <ssh-server-name> <reverse-baseurl> [file-size-mb]"
+    echo "Example: $0 dev1 https://6fd2b3f13a7deedb10480c914496e6daddefe1a6-8090.app.kvin.wang:12004/ 200"
+    echo ""
+    echo "Parameters:"
+    echo "  ssh-server-name: SSH server configuration name"
+    echo "  reverse-baseurl: Base URL for the reverse proxy"
+    echo "  file-size-mb: Test file size in MB (optional, default: 200)"
     echo ""
     echo "The script will automatically:"
     echo "  - Parse the URL to construct SSH proxy and reverse proxy URLs"
@@ -19,6 +24,7 @@ fi
 
 SSH_SERVER="$1"
 INPUT_URL="$2"
+FILE_SIZE_MB="${3:-200}"  # Default to 200MB if not specified
 CLEANUP=true
 
 # Function to parse and construct URLs
@@ -165,13 +171,13 @@ fi
 
 ls -la certs/
 
-echo "📁 Creating 200MB test file..."
+echo "📁 Creating ${FILE_SIZE_MB}MB test file..."
 mkdir -p test-files uploads
-if [ ! -f test-files/random-200mb.bin ]; then
-    dd if=/dev/urandom of=test-files/random-200mb.bin bs=1024 count=204800
+if [ ! -f test-files/random-${FILE_SIZE_MB}mb.bin ]; then
+    dd if=/dev/urandom of=test-files/random-${FILE_SIZE_MB}mb.bin bs=1M count=${FILE_SIZE_MB}
 fi
 # Copy test file to uploads directory for gRPC server access
-cp test-files/random-200mb.bin uploads/random-200mb.bin
+cp test-files/random-${FILE_SIZE_MB}mb.bin uploads/random-${FILE_SIZE_MB}mb.bin
 # Set proper permissions for nginx uploads
 chmod 777 uploads
 
@@ -240,9 +246,9 @@ if [ ! -f "benchmark" ]; then
 fi
 
 # Create test file if it doesn't exist
-if [ ! -f test-200mb.bin ]; then
+if [ ! -f test-${FILE_SIZE_MB}mb.bin ]; then
     echo "📁 Creating local test file..."
-    dd if=/dev/urandom of=test-200mb.bin bs=1M count=200
+    dd if=/dev/urandom of=test-${FILE_SIZE_MB}mb.bin bs=1M count=${FILE_SIZE_MB}
 fi
 
 # Run the benchmark with server hardware info in environment
@@ -259,7 +265,7 @@ echo "   Memory: $SERVER_MEMORY"
 echo "   OS: $SERVER_OS"
 
 # Run Go benchmark
-./benchmark --server "$CLIENT_HOST" --port "$CLIENT_PORT" --size 300
+./benchmark --server "$CLIENT_HOST" --port "$CLIENT_PORT" --size ${FILE_SIZE_MB}
 popd
 
 # Step 3: Cleanup and summary

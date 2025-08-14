@@ -27,11 +27,15 @@ Client ──► Internet ──► Reverse Proxy/Gateway ──► Target Serve
 
 ### Primary Benchmarking
 ```bash
-# Run complete benchmark
+# Run complete benchmark with default 200MB file size
 ./run-bench.sh <ssh-server-name> <reverse-baseurl>
 
+# Run complete benchmark with custom file size (in MB)
+./run-bench.sh <ssh-server-name> <reverse-baseurl> <file-size-mb>
+
 # Example usage
-./run-bench.sh dev1 https://6fd2b3f13a7deedb10480c914496e6daddefe1a6-8090.app.kvin.wang:12004/
+./run-bench.sh dev1 https://6fd2b3f13a7deedb10480c914496e6daddefe1a6-8090.app.kvin.wang:12004/ 200
+./run-bench.sh dev1 https://6fd2b3f13a7deedb10480c914496e6daddefe1a6-8090.app.kvin.wang:12004/ 50
 ```
 
 ### Client-side Testing
@@ -42,7 +46,7 @@ cd client
 ./build.sh
 
 # Run benchmark directly (requires server to be running)
-./benchmark --server <host> --port <port> --size 200
+./benchmark --server <host> --port <port> --size <file-size-mb>
 ```
 
 ### Server Operations
