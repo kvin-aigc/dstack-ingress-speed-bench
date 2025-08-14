@@ -1,6 +1,7 @@
 syntax = "proto3";
 
 package fileservice;
+option go_package = "gwbench/proto";
 
 service FileService {
   rpc UploadFile(stream FileChunk) returns (UploadResponse);

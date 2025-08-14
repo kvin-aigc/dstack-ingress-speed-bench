@@ -1,4 +1,5 @@
 .claude/
+client/benchmark
 client/venv/
 __pycache__
 *.bin

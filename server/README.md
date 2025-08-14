@@ -19,18 +19,18 @@ dd if=/dev/urandom of=test-files/random-200mb.bin bs=1M count=200
 
 3. Start the servers:
 ```bash
-docker-compose up -d
+docker compose up -d
 ```
 
 4. Check status:
 ```bash
-docker-compose ps
-docker-compose logs
+docker compose ps
+docker compose logs
 ```
 
 ## Architecture
 
-- **gRPC Server**: Handles file upload/download via gRPC protocol (port 50051 internal)
+- **gRPC Server**: Go-based server handling file upload/download via gRPC protocol (port 50051 internal)
 - **Nginx Proxy**: 
   - HTTPS termination on port 443
   - HTTP file serving
