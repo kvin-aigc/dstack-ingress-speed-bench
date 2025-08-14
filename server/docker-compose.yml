@@ -4,15 +4,13 @@ services:
   grpc-server:
     build:
       context: .
-      dockerfile: Dockerfile.grpc
+      dockerfile: Dockerfile
     container_name: grpc-server
     networks:
       - speed-test-net
     volumes:
       - ./uploads:/app/uploads
       - ./test-files:/app/test-files
-    environment:
-      - PYTHONUNBUFFERED=1
     restart: unless-stopped
 
   nginx:

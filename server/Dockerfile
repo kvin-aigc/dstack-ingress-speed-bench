@@ -15,7 +15,7 @@ RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.34.2 && \
 
 # Copy source files
 COPY file_service.proto .
-COPY grpc_server.go .
+COPY server.go .
 
 # Generate proto files
 RUN mkdir -p proto && \
@@ -24,7 +24,7 @@ RUN mkdir -p proto && \
            file_service.proto
 
 # Build the binary
-RUN go build -o grpc_server .
+RUN go build -o server .
 
 # Final stage
 FROM alpine:latest
@@ -37,11 +37,11 @@ WORKDIR /app
 RUN mkdir -p /app/uploads
 
 # Copy the binary from builder
-COPY --from=builder /app/grpc_server .
+COPY --from=builder /app/server .
 
 # Create a 200MB test file
 RUN dd if=/dev/urandom of=/app/uploads/random-200mb.bin bs=1024 count=204800
 
 EXPOSE 50051
 
-CMD ["./grpc_server"]
+CMD ["./server"]

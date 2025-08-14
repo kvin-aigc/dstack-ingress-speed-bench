@@ -411,3 +411,38 @@ BENCHMARK RESULTS - 200MB File
 | gRPC       | Download    |          53.86 |       3.96 | ✅        |
 +------------+-------------+----------------+------------+----------+
 ```
+Test Date: 2025-08-14 08:53:26 +0000
+
+🖥️  Server Info:
+   Name: tdx (Go gRPC)
+   CPU Cores: 16
+   Memory: 30.4G
+   OS: DStack 0.5.2 (scarthgap)
+
+
+Test Date: 2025-08-14 08:59:05 +0000
+
+🖥️  Server Info:
+   Name: tdx (Go gRPC)
+   CPU Cores: 16
+   Memory: 30.4G
+   OS: DStack 0.5.2 (scarthgap)
+
+
+Test Date: 2025-08-14 09:00:59 +0000
+
+🖥️  Server Info:
+   Name: tdx (Go gRPC)
+   CPU Cores: 16
+   Memory: 30.4G
+   OS: DStack 0.5.2 (scarthgap)
+
+
+Test Date: 2025-08-14 09:06:32 +0000
+
+🖥️  Server Info:
+   Name: tdx (Go gRPC)
+   CPU Cores: 16
+   Memory: 30.4G
+   OS: DStack 0.5.2 (scarthgap)
+
