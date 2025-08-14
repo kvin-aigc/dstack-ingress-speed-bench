@@ -16,27 +16,35 @@ class FileService(file_service_pb2_grpc.FileServiceServicer):
         print("UploadFile called", flush=True)
         filename = None
         total_bytes = 0
-        file_data = b""
+        filepath = None
+        file_handle = None
         
-        for chunk in request_iterator:
-            if filename is None:
-                filename = chunk.filename
-                print(f"Receiving file: {filename}", flush=True)
-            file_data += chunk.data
-            total_bytes += len(chunk.data)
-            if total_bytes % (10 * 1024 * 1024) == 0:
-                print(f"Received {total_bytes / (1024*1024):.1f} MB", flush=True)
-        
-        if filename:
-            filepath = os.path.join(self.upload_dir, filename)
-            with open(filepath, 'wb') as f:
-                f.write(file_data)
-            print(f"File saved: {filepath} ({total_bytes} bytes)", flush=True)
-        
-        return file_service_pb2.UploadResponse(
-            message=f"File {filename} uploaded successfully",
-            bytes_received=total_bytes
-        )
+        try:
+            for chunk in request_iterator:
+                if filename is None:
+                    filename = chunk.filename
+                    filepath = os.path.join(self.upload_dir, filename)
+                    file_handle = open(filepath, 'wb')
+                    print(f"Receiving file: {filename}", flush=True)
+                
+                # Write chunk directly to disk
+                file_handle.write(chunk.data)
+                total_bytes += len(chunk.data)
+                
+                if total_bytes % (10 * 1024 * 1024) == 0:
+                    print(f"Received {total_bytes / (1024*1024):.1f} MB", flush=True)
+            
+            if file_handle:
+                file_handle.close()
+                print(f"File saved: {filepath} ({total_bytes} bytes)", flush=True)
+            
+            return file_service_pb2.UploadResponse(
+                message=f"File {filename} uploaded successfully",
+                bytes_received=total_bytes
+            )
+        finally:
+            if file_handle:
+                file_handle.close()
 
     def DownloadFile(self, request, context):
         print(f"DownloadFile called for: {request.filename}", flush=True)
