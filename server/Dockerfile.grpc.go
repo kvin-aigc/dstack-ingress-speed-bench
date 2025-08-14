@@ -40,7 +40,7 @@ RUN mkdir -p /app/uploads
 COPY --from=builder /app/grpc_server .
 
 # Create a 200MB test file
-RUN dd if=/dev/urandom of=/app/uploads/random-200mb.bin bs=1M count=200
+RUN dd if=/dev/urandom of=/app/uploads/random-200mb.bin bs=1024 count=204800
 
 EXPOSE 50051
 

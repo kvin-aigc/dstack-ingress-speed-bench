@@ -168,7 +168,7 @@ ls -la certs/
 echo "📁 Creating 200MB test file..."
 mkdir -p test-files
 if [ ! -f test-files/random-200mb.bin ]; then
-    dd if=/dev/urandom of=test-files/random-200mb.bin bs=1M count=200 status=progress
+    dd if=/dev/urandom of=test-files/random-200mb.bin bs=1024 count=204800
 fi
 
 echo "🚀 Starting services with Docker Compose (Go version)..."
