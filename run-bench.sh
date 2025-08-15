@@ -3,6 +3,9 @@
 # Network Speed Test Benchmark Runner
 # Usage: ./run-bench.sh <ssh-server-name> <reverse-baseurl> [file-size-mb]
 # Example: ./run-bench.sh dev1 https://6fd2b3f13a7deedb10480c914496e6daddefe1a6-8090.app.kvin.wang:12004/ 100
+# The TLS-passthrough HTTPS/gRPC base URL would be https://6fd2b3f13a7deedb10480c914496e6daddefe1a6-s.app.kvin.wang:12004/
+# The TLS-terminate HTTP base URL would be https://6fd2b3f13a7deedb10480c914496e6daddefe1a6-80.app.kvin.wang:12004/
+# The TLS-terminate gRPC base URL would be https://6fd2b3f13a7deedb10480c914496e6daddefe1a6-50051p.app.kvin.wang:12004/
 
 set -e
 
@@ -24,7 +27,7 @@ fi
 
 SSH_SERVER="$1"
 INPUT_URL="$2"
-FILE_SIZE_MB="${3:-200}"  # Default to 200MB if not specified
+FILE_SIZE_MB="${3:-200}" # Default to 200MB if not specified
 CLEANUP=true
 
 # Function to parse and construct URLs
@@ -52,12 +55,13 @@ parse_url() {
         local service_port="${BASH_REMATCH[2]}"
         local base_domain="${BASH_REMATCH[3]}"
 
-        # Construct URLs
+        # Construct SSH proxy URLs
         SSH_PROXY_HOST="${hash}-22.${base_domain}"
         SSH_PROXY_PORT="$port"
-        REVERSE_URL="${protocol}://${hash}-s.${base_domain}:${port}${path}"
-        CLIENT_HOST="${hash}-s.${base_domain}"
-        CLIENT_PORT="$port"
+        # Construct all three URL flavors for testing
+        TLS_PASSTHROUGH_ENDPOINT="${protocol}://${hash}-s.${base_domain}:${port}${path}"
+        TLS_TERMINATE_HTTP_ENDPOINT="${protocol}://${hash}-80.${base_domain}:${port}${path}"
+        TLS_TERMINATE_GRPC_ENDPOINT="${protocol}://${hash}-50051g.${base_domain}:${port}${path}"
     else
         echo "❌ Error: Unable to parse the input URL"
         echo "   Expected format: <hash>-<port>.<domain>"
@@ -80,10 +84,18 @@ setup_ssh_config() {
         echo "    User root"
         echo "    ProxyCommand openssl s_client -quiet -connect $proxy_host:$proxy_port"
         echo ""
-        read -p "Add this configuration automatically? [y/N]: " -n 1 -r
-        echo
+        # Check if running in interactive shell
+        if [[ -t 0 ]]; then
+            read -p "Add this configuration automatically? [y/N]: " -n 1 -r
+            echo
+            auto_add=$REPLY
+        else
+            # Non-interactive shell, default to yes
+            echo "Non-interactive shell detected, automatically adding SSH configuration..."
+            auto_add="y"
+        fi
 
-        if [[ $REPLY =~ ^[Yy]$ ]]; then
+        if [[ $auto_add =~ ^[Yy]$ ]]; then
             # Backup existing config
             if [ -f ~/.ssh/config ]; then
                 cp ~/.ssh/config ~/.ssh/config.backup.$(date +%s)
@@ -250,11 +262,10 @@ if [ ! -f test-${FILE_SIZE_MB}mb.bin ]; then
     dd if=/dev/urandom of=test-${FILE_SIZE_MB}mb.bin bs=1M count=${FILE_SIZE_MB}
 fi
 
-# Run the benchmark with server hardware info in environment
-echo "🏃 Running benchmark against $CLIENT_HOST:$CLIENT_PORT..."
+# Run benchmarks against all URL flavors
+echo "🏃 Running benchmarks against all URL flavors..."
 
 echo ""
-echo "🔗 Test endpoint: ${REVERSE_URL}"
 echo "Test Date: $(date -u +"%Y-%m-%d %H:%M:%S %z")"
 echo ""
 echo "🖥️  Server Info:"
@@ -262,9 +273,33 @@ echo "   Name: $SERVER_HOSTNAME"
 echo "   CPU Cores: $SERVER_CPU_CORES"
 echo "   Memory: $SERVER_MEMORY"
 echo "   OS: $SERVER_OS"
+echo ""
 
-# Run Go benchmark
-./benchmark --server "$CLIENT_HOST" --port "$CLIENT_PORT" --size ${FILE_SIZE_MB}
+echo "═══════════════════════════════════════════════════════════════"
+echo "🔗 Testing TLS-passthrough endpoint"
+echo "   HTTPS URL: $TLS_PASSTHROUGH_ENDPOINT"
+echo "   gRPC URL: (defaults to HTTPS endpoint)"
+echo "═══════════════════════════════════════════════════════════════"
+echo "🚀 Running TLS-passthrough endpoint benchmark..."
+if ./benchmark -https "$TLS_PASSTHROUGH_ENDPOINT" -size ${FILE_SIZE_MB}; then
+    echo "✅ TLS-passthrough endpoint test completed successfully"
+else
+    echo "❌ TLS-passthrough endpoint test failed"
+fi
+echo "═══════════════════════════════════════════════════════════════"
+echo "🔗 Testing TLS-terminate endpoints"
+echo "   HTTPS URL: $TLS_TERMINATE_HTTP_ENDPOINT"
+echo "   gRPC URL: $TLS_TERMINATE_GRPC_ENDPOINT"
+echo "═══════════════════════════════════════════════════════════════"
+echo "🚀 Running TLS-terminate endpoint benchmark..."
+if ./benchmark -https "$TLS_TERMINATE_HTTP_ENDPOINT" -grpc "$TLS_TERMINATE_GRPC_ENDPOINT" -size ${FILE_SIZE_MB}; then
+    echo "✅ TLS-terminate endpoint test completed successfully"
+else
+    echo "❌ TLS-terminate endpoint test failed"
+fi
+echo "═══════════════════════════════════════════════════════════════"
+echo "✅ All URL flavor tests completed!"
+echo "═══════════════════════════════════════════════════════════════"
 popd
 
 # Step 3: Cleanup and summary

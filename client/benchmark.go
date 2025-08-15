@@ -253,26 +253,49 @@ func generateReport(httpResults, grpcResults map[string]TestResult, fileSizeMB i
 
 func main() {
 	var (
-		server   = flag.String("server", "", "Server address (required)")
-		port     = flag.Int("port", 443, "Server port")
+		// New URL-based parameters
+		httpsURL = flag.String("https", "", "HTTPS base URL (e.g., https://host:port)")
+		grpcURL  = flag.String("grpc", "", "gRPC host:port (defaults to https host:port if not specified)")
+
 		size     = flag.Int("size", 200, "Test file size in MB")
 		skipHTTP = flag.Bool("skip-http", false, "Skip HTTP tests")
 		skipGRPC = flag.Bool("skip-grpc", false, "Skip gRPC tests")
 	)
 	flag.Parse()
 
-	if *server == "" {
-		fmt.Println("Error: --server is required")
+	// Determine URLs to use
+	var httpURL, grpcHost string
+
+	if *httpsURL != "" {
+		// New URL-based approach
+		httpURL = *httpsURL
+
+		if *grpcURL == "" {
+			grpcURL = httpsURL
+		}
+		if strings.HasPrefix(*grpcURL, "https://") {
+			grpcHost = strings.TrimPrefix(*grpcURL, "https://")
+			// Remove any path component
+			if idx := strings.Index(grpcHost, "/"); idx != -1 {
+				grpcHost = grpcHost[:idx]
+			}
+		} else if strings.HasPrefix(*grpcURL, "grpc://") {
+			grpcHost = strings.TrimPrefix(*grpcURL, "grpc://")
+			// Remove any path component
+			if idx := strings.Index(grpcHost, "/"); idx != -1 {
+				grpcHost = grpcHost[:idx]
+			}
+		} else {
+			grpcHost = *grpcURL
+		}
+	} else {
+		fmt.Println("Error: Either -https or -grpc is required")
 		flag.Usage()
 		os.Exit(1)
 	}
 
 	// Create test file
 	testFile := createTestFile(*size)
-
-	// Construct URLs
-	httpURL := fmt.Sprintf("https://%s:%d", *server, *port)
-	grpcHost := fmt.Sprintf("%s:%d", *server, *port)
 
 	var httpResults, grpcResults map[string]TestResult
 
